@@ -16,13 +16,13 @@ class NumpyArrayEncoder(json.JSONEncoder):
 
 
 
-def sim_angles_to_real(theta):
+def sim_angles_to_real0(theta):
     # theta [6,3]
     real_angles=np.zeros_like(theta).flatten()
     for i in range(6):
         if i<3:
             
-            hip=180+theta[i,0]/math.pi*180 #向前为增加
+            hip=180+theta[i,0]/math.pi*180 
             
             knee=180-theta[i,1]/math.pi*180
             ankle=62.69+theta[i,2]/math.pi*180
@@ -32,7 +32,7 @@ def sim_angles_to_real(theta):
             real_angles[3+i*6+2]=ankle
             
         else:
-            hip=180+theta[i,0]/math.pi*180 #向前为增加
+            hip=180+theta[i,0]/math.pi*180 
             knee=180+theta[i,1]/math.pi*180
             ankle=62.69-theta[i,2]/math.pi*180
             
@@ -49,7 +49,7 @@ def angles_to_tick(angles):
     return theta_tick
             
 
-def real_angles_to_sim(real_angles):
+def real_angles_to_sim0(real_angles):
     # theta [6,3]
     theta=np.zeros((6,3))
     for i in range(6):
@@ -67,7 +67,54 @@ def real_angles_to_sim(real_angles):
             
            
         
-    return theta          
+    return theta      
+
+def real_angles_to_sim(real_angles):
+    # theta [6,3]
+    
+    theta=np.zeros((6,3))
+    for i in range(6):
+        if i<3:
+            theta[i,0]= -(real_angles[0+i*6+0]-180)/180.0*math.pi
+            theta[i,1]= (-real_angles[0+i*6+1]+180)/180.0*math.pi
+            theta[i,2]= (real_angles[0+i*6+2]-62.69)/180.0*math.pi
+            
+            
+            
+        else:
+            theta[i,0]= -(real_angles[3+(i-3)*6+0]-180)/180.0*math.pi
+            theta[i,1]= (real_angles[3+(i-3)*6+1]-180)/180.0*math.pi
+            theta[i,2]= (-real_angles[3+(i-3)*6+2]+62.69)/180.0*math.pi
+            
+           
+        
+    return theta
+
+def sim_angles_to_real(theta):
+    # theta [6,3]  杈撳�? np array [18]
+    real_angles=np.zeros_like(theta).flatten()*1.00000
+    for i in range(6):
+        if i<3:
+            
+            hip=(180-theta[i,0]/math.pi*180)
+            
+            knee=180-theta[i,1]/math.pi*180
+            ankle=62.69+theta[i,2]/math.pi*180
+            
+            real_angles[0+i*6+0]=hip
+            real_angles[0+i*6+1]=knee
+            real_angles[0+i*6+2]=ankle
+            
+        else:
+            hip=(180-theta[i,0]/math.pi*180) 
+            knee=180+theta[i,1]/math.pi*180
+            ankle=62.69-theta[i,2]/math.pi*180
+            
+            real_angles[3+(i-3)*6+0]=hip
+            real_angles[3+(i-3)*6+1]=knee
+            real_angles[3+(i-3)*6+2]=ankle
+        
+    return real_angles    
 
 def real_current_to_sim_torque(real_current):
     # theta [6,3]
@@ -163,9 +210,13 @@ if getch() == chr(0x1b):
 position_Read=servos.read_all_positions()
 print("read position:",position_Read)
 positions=[]
+phase_all=[]
+goal_pos_sim=[]
+current_pos_tick=[]
 
 
-for step in range(240*2):
+# -0.3 0.33
+for step in range(240*1):
     
     while cpg_index >=240:
         cpg_index=cpg_index-240
@@ -179,6 +230,9 @@ for step in range(240*2):
     angles_real=sim_angles_to_real(theta_sim)
     theta_tick=angles_to_tick(angles_real)
     positions.append(theta_tick)
+    phase=phase_r[cpg_index]
+    phase_all.append(phase)
+    goal_pos_sim.append(theta_sim)
     
     servos.write_all_positions(theta_tick)
     #servos.write_all_positions_angles(angles_real)
@@ -186,15 +240,17 @@ for step in range(240*2):
     
     
     position_Read=servos.read_all_positions()
+    position_tick=angles_to_tick(position_Read)
+    current_pos_tick.append(position_tick)
     position_error=angles_real-position_Read
-    print("position_error",position_error)
-    print("position target",angles_real)
+    #print("position_error",position_error)
+    #print("position target",angles_real)
     
     
-    current_read=servos.read_all_torque()
-    torque_sim=real_torque_to_sim_torque(current_read)
-    print("torque sim",torque_read_sim,"\n")
-    print("torque real",torque_sim,"\n")
+    #current_read=servos.read_all_torque()
+    #torque_sim=real_torque_to_sim_torque(current_read)
+    #print("torque sim",torque_read_sim,"\n")
+    #print("torque real",torque_sim,"\n")
     #print("current",current_read,"\n")
     end_time_t=time.time()
     print("last time",end_time_t-start_time_t)
@@ -209,9 +265,9 @@ for step in range(240*2):
     
     cpg_index=cpg_index+1
 
-str1="positions_pure_cpg"+".json"
+str1="pos_1"+".json"
 print(str1)
-data = {'positions': positions}
+data = {'positions': positions,'current_pos_tick':current_pos_tick,'goal_pos_sim':goal_pos_sim,'phase':phase_all,}
 data_json = json.dumps(data, cls=NumpyArrayEncoder)
 with open(str1, 'w') as f:
     json.dump(data, f, cls=NumpyArrayEncoder)
