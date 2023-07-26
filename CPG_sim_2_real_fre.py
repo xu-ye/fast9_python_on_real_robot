@@ -304,7 +304,7 @@ for index in range(T*1):
     #print("torque sim",torque_read_sim,"\n")
     #print("torque real",torque_sim,"\n")
     #print("current",current_read,"\n")
-    while (time.time()-start_time_t)*1000<8.00:
+    while (time.time()-start_time_t)*1000<10.00:
         1
     end_time_t=time.time()
     print("last time",end_time_t-start_time_t)
@@ -322,7 +322,7 @@ for index in range(T*1):
     
     
     
-str1="pos_0_5_8_new1"+".json"
+str1="pos_0_5_10_0"+".json"
 print(str1)
 data = {'positions_tick': positions_tick,'current_pos_tick':current_pos_tick,'goal_pos_sim':goal_pos_sim,'phase':phase_all,}
 data_json = json.dumps(data, cls=NumpyArrayEncoder)

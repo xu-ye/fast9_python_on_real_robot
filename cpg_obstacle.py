@@ -117,7 +117,7 @@ def judge_reflex(traj_error):
     sum_leg=np.sum(sum_flag,axis=1)
     #print("sum leg",sum_leg)
     reflex=np.zeros(6)
-    reflex[sum_leg>60]=1
+    reflex[sum_leg>90]=1
     return reflex,sum_leg
 
 def judge_reflex_stance(traj_error):
@@ -170,7 +170,7 @@ def sim_angles_to_real0(theta):
 def angles_to_tick(angles):
     theta_tick=np.zeros_like(angles)
     for i in range(18):
-        theta_tick[i]=int(angles[i]/180*2048)
+        theta_tick[i]=int(angles[i]/180*1.0*2048)
     return theta_tick
             
 
@@ -346,7 +346,7 @@ with open('force_real7.json', 'r') as f:
     torque_n=np.asarray(data_read['torque_n'])
 
 
-with open('pos_0_5_8_new1.json', 'r') as f:
+with open('pos_0_5_8_new2.json', 'r') as f:
     
     data_read = json.load(f)
     positions_tick = np.asarray(data_read['positions_tick'])
@@ -418,11 +418,16 @@ theta_sim=goal_pos_sim[step]
 angles_real=sim_angles_to_real(theta_sim)
 servos.Robot_initialize(angles_real)
 goal_theta_tick=angles_to_tick(angles_real)
-time.sleep(2)
+time.sleep(5)
 position_Read=servos.read_all_positions()
 position_Read_tick=angles_to_tick(position_Read)
 flat_cpg_tick=current_pos_tick[step] #18
 traj_error_buf[0]=flat_cpg_tick-position_Read_tick
+
+theta_tick=angles_to_tick(angles_real)
+servos.write_all_positions(theta_tick)
+servos.write_all_positions(theta_tick)
+servos.write_all_positions(theta_tick)
 
 
 T=480 
@@ -440,6 +445,9 @@ on_reflex_all=[]
 traj_error_all=[]
 count_all=[]
 csv_rows=[]
+
+# 计数在每个swing or reflex中的步数
+swing_step_count=0
 
 
 
@@ -465,10 +473,14 @@ for count in range(int(T*3)):
         
     else:
         # judhe whwther or not is a reflex
-        reflex,sum_leg=judge_reflex(traj_error_buf)
-        reflex_sim=real_reflex_leg_to_sim(reflex)
+        # 在判断一开始的reflex 之前就清零
         phase_now=phase[step]
         last_phase=phase[step-1]
+        
+        
+        reflex,sum_leg=judge_reflex(traj_error_buf)
+        reflex_sim=real_reflex_leg_to_sim(reflex)
+        
         reflex_sim=swing_reflex(reflex_sim,phase_now)
         reflex_stance,sum_leg_stance=judge_reflex_stance(traj_error_buf)
         reflex_stance_sim0=real_reflex_leg_to_sim(reflex_stance)
@@ -477,7 +489,10 @@ for count in range(int(T*3)):
         print("sum_leg",sum_leg,'sum_leg_stance',sum_leg_stance)
         
         #print("count:",count,"reflex",reflex,"on reflex",on_reflex)
+        # on_reflex 在sim的基础上
         theta_sim=goal_pos_sim[step] 
+        #on_reflex=swing_reflex(on_reflex,phase_now)
+        #on_reflex_stance=stance_reflex(on_reflex_stance,phase_now)
         if reflex_sim.any():
             reflex_index[reflex_sim>0]=T_count
             on_reflex[reflex_sim>0]=1
@@ -496,8 +511,10 @@ for count in range(int(T*3)):
         # swing 和stance  交界处 error 清零
         swing_step_per_reflex[last_phase*phase_now<0]=0
         stance_step_per_reflex[last_phase*phase_now<0]=0
-        if (last_phase*phase_now).any()<0:
+        swing_step_count+=1
+        if (last_phase*phase_now)[0]<1:
             traj_error_buf=np.zeros_like(traj_error_buf)
+            swing_step_count=0
             
             
             
@@ -516,6 +533,12 @@ for count in range(int(T*3)):
         
         #theta_new_sim=get_reflex_theta(theta_sim,coef,reflex_sim,on_reflex_sim,phase_now,)
         
+        if swing_step_count<10:
+            coef=1
+            #coef_stance=1
+        else:
+            coef=2
+            #coef_stance=1.5
         theta_new_sim=get_reflex_theta_all(theta_sim,coef,coef_stance,reflex_sim,on_reflex,reflex_stance_sim,on_reflex_stance,phase_now,stance_step_per_reflex,swing_step_per_reflex)
         angles_real=sim_angles_to_real(theta_new_sim)
         theta_tick=angles_to_tick(angles_real)
@@ -554,10 +577,10 @@ for count in range(int(T*3)):
         reflex_index2=copy.copy(reflex_index)
         reflex_index_stance2=copy.copy(reflex_index_stance)
         
-        reflex_index2=reflex_index
-        reflex_index2=reflex_index
+        
+        
         csv_row=[]
-        csv_row=[count,T_count,sum_leg,reflex_sim,reflex_stance_sim,on_reflex2,on_reflex_stance2,reflex_index2,reflex_index_stance2,flat_cpg_tick-position_Read_tick]
+        csv_row=[count,T_count,sum_leg,reflex_sim,reflex_stance_sim,on_reflex2,on_reflex_stance2,reflex_index2,reflex_index_stance2,swing_step_count,flat_cpg_tick-position_Read_tick]
         csv_rows.append(csv_row)
         
         
@@ -588,13 +611,13 @@ for count in range(int(T*3)):
         step=0
     else:
         step=step+1
-    if step%T==239:
+    if step%T==int(T/4-1):
         T_count+=1
 
 str1="positions_pure_"+".json"
 print(str1)
 # csv
-with open('data_new_traj.csv', mode='w', newline='') as csv_file:
+with open('data_new_traj6.csv', mode='w', newline='') as csv_file:
     writer = csv.writer(csv_file)
     writer.writerow(['count','T_count','sum_leg','reflex','on_reflex_','reflex_index','traj_error'])
     writer.writerows(csv_rows)
