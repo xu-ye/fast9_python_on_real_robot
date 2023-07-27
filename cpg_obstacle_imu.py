@@ -243,7 +243,7 @@ def read_imu(q_imu):
     )
 
     if (platform.system().lower() == 'linux'):
-        device.serialConfig.portName = "/dev/ttyUSB0"   #设置串口   Set serial port
+        device.serialConfig.portName = "/dev/ttyUSB1"   #设置串口   Set serial port
     else:
         device.serialConfig.portName = "COM39"          #设置串口   Set serial port
     device.serialConfig.baud = 230400                     #设置波特率  Set baud rate
@@ -263,7 +263,7 @@ def reflex_(q_imu):
     
 
 
-    with open('pos_0_5_8_new2.json', 'r') as f:
+    with open('pos_0_5_10_1.json', 'r') as f:
         
         data_read = json.load(f)
         positions_tick = np.asarray(data_read['positions_tick'])
@@ -275,13 +275,14 @@ def reflex_(q_imu):
 
     # init servos
     servos=Servos()
-    servos.read_voltage(1)
+    voltage=servos.read_voltage(1)
     servos.set_position_control()
     #position_Read=servos.read_position_loop()
     position_all=range(18)
     print("Press any key to enable legs! (or press ESC to escape!)")
     #if getch() != chr(0x1b):
         #servos.enable_torque(position_all)
+    servos.enable_torque(position_all)
     position_Read=servos.read_all_positions()
     print("read position:",position_Read)
     
@@ -332,14 +333,14 @@ def reflex_(q_imu):
 
 
     
-    for count in range(int(T*1)):
+    for count in range(int(T*6)):
         start_time_t=time.time()
         
         # 接收imu的数据
         IMU_data=q_imu.get(True,10)
-        if count%1==0:
-            while( not q_imu.empty()):
-                IMU_data=q_imu.get(True,10)
+        
+        while( not q_imu.empty()):
+            IMU_data=q_imu.get(True,10)
         if count==0:
             imu_init=IMU_data
             IMU_data[0:3]=IMU_data[0:3]-imu_init[0:3]
@@ -479,7 +480,7 @@ def reflex_(q_imu):
             
             
             csv_row=[]
-            csv_row=[count,T_count,sum_leg,reflex_sim,reflex_stance_sim,on_reflex2,on_reflex_stance2,reflex_index2,reflex_index_stance2,swing_step_count,flat_cpg_tick-position_Read_tick]
+            csv_row=[count,T_count,sum_leg,reflex_sim,reflex_stance_sim,on_reflex2,on_reflex_stance2,reflex_index2,reflex_index_stance2,swing_step_count,flat_cpg_tick,position_Read_tick,IMU_data,voltage]
             csv_rows.append(csv_row)
             
             
@@ -492,12 +493,14 @@ def reflex_(q_imu):
             
             
         
-        #print("current",current_read,"\n")
+            #print("current",current_read,"\n")
+            
+            print("reflex_stance",reflex_stance_sim,"on reflex",on_reflex_stance,'reflex_index_stance',reflex_index_stance,'T_count',)
             while (time.time()-start_time_t)*1000<10.00:
                 1
             end_time_t=time.time()
             print("last time",time.time()-start_time_t,"count:",count,"reflex",reflex_sim,"on reflex",on_reflex,'reflex_index',reflex_index,'T_count',T_count)
-            print("reflex_stance",reflex_stance_sim,"on reflex",on_reflex_stance,'reflex_index_stance',reflex_index_stance,'T_count',)
+           
             
         
         
@@ -513,12 +516,11 @@ def reflex_(q_imu):
         if step%T==int(T/4-1):
             T_count+=1
 
-    str1="positions_pure_"+".json"
-    print(str1)
+    
     # csv
-    with open('data_new_traj6.csv', mode='w', newline='') as csv_file:
+    with open('data_reflex_imu_stairs_4_7_5_7.csv', mode='w', newline='') as csv_file:
         writer = csv.writer(csv_file)
-        writer.writerow(['count','T_count','sum_leg','reflex','on_reflex_','reflex_index','traj_error'])
+        writer.writerow(['count','T_count','sum_leg','reflex_sim','reflex_stance_sim','on_reflex2','on_reflex_stance2','reflex_index2','reflex_index_stance2','swing_step_count','flat_cpg_tick','position_Read_tick','IMU_data'])
         writer.writerows(csv_rows)
 
     data = {'positions': positions}

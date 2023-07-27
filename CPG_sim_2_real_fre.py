@@ -222,22 +222,22 @@ position_Read=servos.read_position_loop()
 print("read position:",position_Read)
 DXLn_ID=[0,1,2,3,4,5]
 servos.enable_torque(DXLn_ID)
-print("Press any key to continue! (or press ESC to move leg2!)")
-if getch() == chr(0x1b):
-    servos.write_some_positions(goal_position,DXLn_ID)
+#print("Press any key to continue! (or press ESC to move leg2!)")
+#if getch() == chr(0x1b):
+#    servos.write_some_positions(goal_position,DXLn_ID)
 time.sleep(1)
 DXLn_ID=[6,7,8,9,10,11]
 servos.enable_torque(DXLn_ID)
-print("Press any key to continue! (or press ESC to move leg2!)")
-if getch() == chr(0x1b):
-    servos.write_some_positions(goal_position,DXLn_ID)
+#print("Press any key to continue! (or press ESC to move leg2!)")
+#if getch() == chr(0x1b):
+#    servos.write_some_positions(goal_position,DXLn_ID)
 
 
 DXLn_ID=[12,13,14,15,16,17]
 servos.enable_torque(DXLn_ID)
-print("Press any key to continue! (or press ESC to move leg2!)")
-if getch() == chr(0x1b):
-    servos.write_some_positions(goal_position,DXLn_ID)
+#print("Press any key to continue! (or press ESC to move leg2!)")
+#if getch() == chr(0x1b):
+#    servos.write_some_positions(goal_position,DXLn_ID)
 
 position_Read=servos.read_all_positions()
 print("read position:",position_Read)
@@ -322,7 +322,7 @@ for index in range(T*1):
     
     
     
-str1="pos_0_5_10_0"+".json"
+str1="pos_0_5_10_1"+".json"
 print(str1)
 data = {'positions_tick': positions_tick,'current_pos_tick':current_pos_tick,'goal_pos_sim':goal_pos_sim,'phase':phase_all,}
 data_json = json.dumps(data, cls=NumpyArrayEncoder)

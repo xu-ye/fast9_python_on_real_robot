@@ -351,6 +351,7 @@ class Servos:
 
         if dxl_present_voltage<11.1:
             print("!!!!voltage is not enough")
+        return dxl_present_voltage
 
     def read_current_single(self,dxl_ID):
         dxl_present_current, dxl_comm_result, dxl_error = self.packetHandler.read2ByteTxRx(self.portHandler, dxl_ID,

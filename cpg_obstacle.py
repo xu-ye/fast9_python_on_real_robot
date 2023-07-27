@@ -346,7 +346,7 @@ with open('force_real7.json', 'r') as f:
     torque_n=np.asarray(data_read['torque_n'])
 
 
-with open('pos_0_5_8_new2.json', 'r') as f:
+with open('pos_0_5_10_1.json', 'r') as f:
     
     data_read = json.load(f)
     positions_tick = np.asarray(data_read['positions_tick'])
@@ -594,7 +594,7 @@ for count in range(int(T*3)):
         
     
     #print("current",current_read,"\n")
-        while (time.time()-start_time_t)*1000<8.00:
+        while (time.time()-start_time_t)*1000<10.00:
             1
         end_time_t=time.time()
         print("last time",time.time()-start_time_t,"count:",count,"reflex",reflex_sim,"on reflex",on_reflex,'reflex_index',reflex_index,'T_count',T_count)
@@ -617,7 +617,7 @@ for count in range(int(T*3)):
 str1="positions_pure_"+".json"
 print(str1)
 # csv
-with open('data_new_traj6.csv', mode='w', newline='') as csv_file:
+with open('data_new_traj9.csv', mode='w', newline='') as csv_file:
     writer = csv.writer(csv_file)
     writer.writerow(['count','T_count','sum_leg','reflex','on_reflex_','reflex_index','traj_error'])
     writer.writerows(csv_rows)
