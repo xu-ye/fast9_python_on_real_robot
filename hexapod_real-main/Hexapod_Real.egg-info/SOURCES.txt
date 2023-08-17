@@ -1,0 +1,6 @@
+setup.py
+Hexapod_Real.egg-info/PKG-INFO
+Hexapod_Real.egg-info/SOURCES.txt
+Hexapod_Real.egg-info/dependency_links.txt
+Hexapod_Real.egg-info/requires.txt
+Hexapod_Real.egg-info/top_level.txt

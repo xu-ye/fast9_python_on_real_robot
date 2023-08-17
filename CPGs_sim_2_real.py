@@ -159,7 +159,7 @@ def real_torque_to_sim_torque(real_current):
     return torque_sim            
 
 
-with open('force_real7.json', 'r') as f:
+with open('force_real17.json', 'r') as f:
     
     data_read = json.load(f)
     force_r = np.asarray(data_read['contact_force'])
@@ -178,7 +178,7 @@ import numpy as np
 
 from Servos import *
 
-
+'''
 servos=Servos()
 #servos.light_LED()
 #goal_position=2048*np.ones(1,18)
@@ -209,11 +209,55 @@ if getch() == chr(0x1b):
 
 position_Read=servos.read_all_positions()
 print("read position:",position_Read)
+
+'''
+
+
+servos=Servos()
+#servos.light_LED()
+#goal_position=2048*np.ones(1,18)
+servos.read_voltage(1
+                    )
+servos.set_position_control()
+goal_position=np.array([180,204,85,180,204,85])
+position_Read=servos.read_position_loop()
+print("read position:",position_Read)
+DXLn_ID=[0,1,2,3,4,5]
+servos.enable_torque(DXLn_ID)
+#print("Press any key to continue! (or press ESC to move leg2!)")
+#if getch() == chr(0x1b):
+#    servos.write_some_positions(goal_position,DXLn_ID)
+time.sleep(1)
+DXLn_ID=[6,7,8,9,10,11]
+servos.enable_torque(DXLn_ID)
+#print("Press any key to continue! (or press ESC to move leg2!)")
+#if getch() == chr(0x1b):
+#    servos.write_some_positions(goal_position,DXLn_ID)
+
+
+DXLn_ID=[12,13,14,15,16,17]
+servos.enable_torque(DXLn_ID)
+#print("Press any key to continue! (or press ESC to move leg2!)")
+#if getch() == chr(0x1b):
+#    servos.write_some_positions(goal_position,DXLn_ID)
+
+position_Read=servos.read_all_positions()
+print("read position:",position_Read)
+
+
+
+
 positions=[]
 phase_all=[]
 goal_pos_sim=[]
 current_pos_tick=[]
 
+theta_sim=theta_r[cpg_index,:,:]
+angles_real=sim_angles_to_real(theta_sim)
+theta_tick=angles_to_tick(angles_real)
+servos.write_all_positions(theta_tick)
+time.sleep(0.5)
+servos.write_all_positions(theta_tick)
 
 # -0.3 0.33
 for step in range(240*1):
@@ -252,6 +296,8 @@ for step in range(240*1):
     #print("torque sim",torque_read_sim,"\n")
     #print("torque real",torque_sim,"\n")
     #print("current",current_read,"\n")
+    while (time.time()-start_time_t)*1000<20.00:
+        1
     end_time_t=time.time()
     print("last time",end_time_t-start_time_t)
     
@@ -265,9 +311,10 @@ for step in range(240*1):
     
     cpg_index=cpg_index+1
 
-str1="pos_1"+".json"
+str1="pos_20_17_1"+".json"
 print(str1)
-data = {'positions': positions,'current_pos_tick':current_pos_tick,'goal_pos_sim':goal_pos_sim,'phase':phase_all,}
+#data = {'positions': positions,'current_pos_tick':current_pos_tick,'goal_pos_sim':goal_pos_sim,'phase':phase_all,}
+data = {'positions_tick': positions,'current_pos_tick':current_pos_tick,'goal_pos_sim':goal_pos_sim,'phase':phase_all,}
 data_json = json.dumps(data, cls=NumpyArrayEncoder)
 with open(str1, 'w') as f:
     json.dump(data, f, cls=NumpyArrayEncoder)

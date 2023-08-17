@@ -1,0 +1,7 @@
+README.md
+setup.py
+gym_hexapod.egg-info/PKG-INFO
+gym_hexapod.egg-info/SOURCES.txt
+gym_hexapod.egg-info/dependency_links.txt
+gym_hexapod.egg-info/requires.txt
+gym_hexapod.egg-info/top_level.txt

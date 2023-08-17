@@ -243,7 +243,7 @@ def read_imu(q_imu):
     )
 
     if (platform.system().lower() == 'linux'):
-        device.serialConfig.portName = "/dev/ttyUSB1"   #设置串口   Set serial port
+        device.serialConfig.portName = "/dev/ttyUSB0"   #设置串口   Set serial port
     else:
         device.serialConfig.portName = "COM39"          #设置串口   Set serial port
     device.serialConfig.baud = 230400                     #设置波特率  Set baud rate
@@ -263,7 +263,8 @@ def reflex_(q_imu):
     
 
 
-    with open('pos_0_5_10_1.json', 'r') as f:
+    #with open('pos_0_5_10_1.json', 'r') as f:
+    with open('pos_20_17.json', 'r') as f:
         
         data_read = json.load(f)
         positions_tick = np.asarray(data_read['positions_tick'])
@@ -321,10 +322,10 @@ def reflex_(q_imu):
     
     
     step=0
-    T=480 
+    T=240
     T_count=0
     coef=2
-    coef_stance=1.5
+    coef_stance=1
     step=0
     reflex=np.zeros(6)
     # 计数在每个swing or reflex中的步数
@@ -333,7 +334,7 @@ def reflex_(q_imu):
 
 
     
-    for count in range(int(T*6)):
+    for count in range(int(T*4)):
         start_time_t=time.time()
         
         # 接收imu的数据
@@ -397,8 +398,8 @@ def reflex_(q_imu):
             if on_reflex_stance.any():
                 swing_step_per_reflex[on_reflex>0]+=1
                 
-            swing_step_per_reflex[swing_step_per_reflex>239]=0
-            stance_step_per_reflex[stance_step_per_reflex>239]=0
+            swing_step_per_reflex[swing_step_per_reflex>int(T/2-1)]=0
+            stance_step_per_reflex[stance_step_per_reflex>int(T/2-1)]=0
             
             
             # swing 和stance  交界处 error 清零
@@ -408,6 +409,7 @@ def reflex_(q_imu):
             if (last_phase*phase_now)[0]<1:
                 traj_error_buf=np.zeros_like(traj_error_buf)
                 swing_step_count=0
+                on_reflex=np.zeros_like(on_reflex)
                 
             for i in range(6):# 当进入下一周期后 默认不在reflex范围内
                 if (T_count-reflex_index[i])==1 and on_reflex[i]>0:
@@ -433,8 +435,10 @@ def reflex_(q_imu):
             
             
             
-            if swing_step_count<10:
+            if swing_step_count<8:
                 coef=1
+                on_reflex=np.zeros_like(on_reflex)
+                reflex_sim=np.zeros_like(on_reflex)
                 #coef_stance=1
             else:
                 coef=2
@@ -477,10 +481,10 @@ def reflex_(q_imu):
             reflex_index2=copy.copy(reflex_index)
             reflex_index_stance2=copy.copy(reflex_index_stance)
             
-            
+            error_now=copy.copy(traj_error_buf[3])
             
             csv_row=[]
-            csv_row=[count,T_count,sum_leg,reflex_sim,reflex_stance_sim,on_reflex2,on_reflex_stance2,reflex_index2,reflex_index_stance2,swing_step_count,flat_cpg_tick,position_Read_tick,IMU_data,voltage]
+            csv_row=[count,T_count,sum_leg,reflex_sim,reflex_stance_sim,on_reflex2,on_reflex_stance2,reflex_index2,reflex_index_stance2,swing_step_count,flat_cpg_tick,position_Read_tick,IMU_data,voltage,error_now,swing_step_count]
             csv_rows.append(csv_row)
             
             
@@ -496,7 +500,7 @@ def reflex_(q_imu):
             #print("current",current_read,"\n")
             
             print("reflex_stance",reflex_stance_sim,"on reflex",on_reflex_stance,'reflex_index_stance',reflex_index_stance,'T_count',)
-            while (time.time()-start_time_t)*1000<10.00:
+            while (time.time()-start_time_t)*1000<20.00:
                 1
             end_time_t=time.time()
             print("last time",time.time()-start_time_t,"count:",count,"reflex",reflex_sim,"on reflex",on_reflex,'reflex_index',reflex_index,'T_count',T_count)
@@ -509,7 +513,7 @@ def reflex_(q_imu):
             
         
         
-        if step==479:
+        if step==239:
             step=0
         else:
             step=step+1
@@ -518,7 +522,7 @@ def reflex_(q_imu):
 
     
     # csv
-    with open('data_reflex_imu_stairs_4_7_5_7.csv', mode='w', newline='') as csv_file:
+    with open('data_reflex_imu_4_20_9.csv', mode='w', newline='') as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(['count','T_count','sum_leg','reflex_sim','reflex_stance_sim','on_reflex2','on_reflex_stance2','reflex_index2','reflex_index_stance2','swing_step_count','flat_cpg_tick','position_Read_tick','IMU_data'])
         writer.writerows(csv_rows)

@@ -20,7 +20,7 @@ print("voltage",)
 #servos.enable_torque([10])
 servos.set_position_control()
 #servos.read_position_loop()
-for i in range(10):
+for i in range(50):
 
 	#servos.read_voltage(ID)
 	start_time=time.time()
