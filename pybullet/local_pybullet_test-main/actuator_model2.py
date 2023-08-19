@@ -954,6 +954,13 @@ def actuator_control_pd__multi_obstacle(P_gain,D_gain,max_speed):
     p.disconnect()
     return -average_sum
 
+def __rpy2quaternion(roll, pitch, yaw):
+        x=math.sin(pitch/2)*math.sin(yaw/2)*math.cos(roll/2)+math.cos(pitch/2)*math.cos(yaw/2)*math.sin(roll/2)
+        y=math.sin(pitch/2)**math.cos(yaw/2)*math.cos(roll/2)+math.cos(pitch/2)*math.sin(yaw/2)*math.sin(roll/2)
+        z=math.cos(pitch/2)*math.sin(yaw/2)*math.cos(roll/2)-math.sin(pitch/2)*math.cos(yaw/2)*math.sin(roll/2)
+        w=math.cos(pitch/2)*math.cos(yaw/2)*math.cos(roll/2)-math.sin(pitch/2)*math.sin(yaw/2)*math.sin(roll/2)
+        ori=[x,y,z,w]
+        return ori
 
 def actuator_control_pd_10ms(P_gain,D_gain,max_speed):
     p.connect(p.DIRECT )  # 连接到仿真服务器
@@ -968,17 +975,26 @@ def actuator_control_pd_10ms(P_gain,D_gain,max_speed):
 
     # mini cheetah的初始位置
     startPos = [0, 0, 0.5]
-    startOri=__rpy2quaternion(math.pi/2,0,0)
+    startOri=__rpy2quaternion(math.pi/3,0,0)
     # read from csv
-
+    
     #21.72978
 
     # 加载urdf文件
-    robot = p.loadURDF("hexapod_34/urdf/hexapod_34.urdf", startPos,useFixedBase=True,)
+    robot = p.loadURDF("hexapod_34/urdf/hexapod_34.urdf", startPos,startOri,useFixedBase=True,)
     length=0.3
     delta=-0.014064173723102645-(-0.02594413848924254)+0.001+0.0003
     base_position=[-0.21,0.155+delta,0.015]
     hal_geo=[0.05, 0.05, 0.015]
+    
+    basePos, baseOri = p.getBasePositionAndOrientation(robot)
+    (x, y, z, w) = baseOri
+    # print(basePos)
+    roll = math.atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y))
+    pitch = math.asin(2 * (w * y - x * z))
+    yaw = math.atan2(2 * (w * z + x * y), 1 - 2 * (z * z + y * y))
+    IMU = np.array([roll, pitch, yaw])
+    print("roll pitch yaw!",roll,pitch,yaw)
 
     
     colBoxId = p.createCollisionShape(p.GEOM_BOX,halfExtents=hal_geo)
@@ -1093,7 +1109,7 @@ def actuator_control_pd_10ms(P_gain,D_gain,max_speed):
 
                     p.stepSimulation()
                 end_time=time.time()
-                print("last time",(end_time-start_time)*1000)
+                #print("last time",(end_time-start_time)*1000)
                 
 
                 

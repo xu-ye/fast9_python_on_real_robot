@@ -184,7 +184,8 @@ def stance_and_swing_reflex(reflex_sim_swing,reflex_sim_stance,phase):
 
 def judge_imu_reflex2(imu_data,phase):
     # 输入imu__data 弧度
-    imu_data1=imu_data/3.1415926*180
+    #imu_data1=imu_data/3.1415926*180
+    imu_data1=imu_data
     reflex=np.zeros(6)
     
     if abs(imu_data1[0])>3 or abs(imu_data1[1])>3 or abs(imu_data1[2])>5:
@@ -219,7 +220,7 @@ def imu_roll_reflex(imu_reflex,phase,theta_original,coef):
     return  theta_new
 
 def imu_roll_reflex2(imu_reflex,phase,theta_original,coef):
-    
+    # 这里的imu_reflex corf  都是仿真中的
 
     cf_base=0.3
     ft_base=-0.33
@@ -244,7 +245,9 @@ def imu_roll_reflex2(imu_reflex,phase,theta_original,coef):
 
 
 def get_imu_coef(imu_data,imu_reflex):
-    imu_data1=imu_data/3.1415926*180
+    #imu_data1=imu_data/3.1415926*180
+    # 都是仿真中的
+    imu_data1=imu_data
     coef_imu=np.zeros(6)
     max_bound=100
     coef1=3

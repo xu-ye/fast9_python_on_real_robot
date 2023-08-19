@@ -133,11 +133,11 @@ def load_and_actor(model1_dir,q_obs):
     act_dim = 1
     action_type = 'Continuous'
     num_agents=6
-    n_embd=64
+    n_embd=32
     device = torch.device("cpu")
     obs_dim=obs_dim_t*num_agents
     
-    action_net1=ActionNet(obs_dim, n_embd*4, act_dim*6,device)
+    action_net1=ActionNet(obs_dim, n_embd*1, act_dim*1,device)
     saved_model_1 = torch.load(model1_dir,map_location=torch.device('cpu'))
     #action_net1.load_state_dict(saved_model_1)
     
@@ -678,7 +678,7 @@ if __name__ == '__main__':
     
     
     
-    model1_dir="distill_model/action_net1_BC_mlp_1_20.pt"
+    model1_dir="/home/fast3/Desktop/DynamixelSDK-3.7.31/python/tests/protocol2_0/distill_model/action_net_one_BC_mlp_new2_1_70.pt"
     model2_dir="distill_model/action_net2_BC_mlp_1_20.pt"
     model3_dir="distill_model/action_net3_BC_mlp_1_20.pt"
     model4_dir="distill_model/action_net4_BC_mlp_1_20.pt"
@@ -694,15 +694,15 @@ if __name__ == '__main__':
     
     
     
-    set_obs1 = Process(target=set_obs,args=(q_obs1,q_obs2,q_obs3,q_obs4,q_obs5,q_obs6,) )
-    set_obs1.start()
+    #set_obs1 = Process(target=set_obs,args=(q_obs1,q_obs2,q_obs3,q_obs4,q_obs5,q_obs6,) )
+    #set_obs1.start()
     
     #actor1 = Process(target=actor_act,args=(q_obs1,action_net1,) )
     #actor1.start()
     
     
-    actor1 = Process(target=load_and_actor,args=(model1_dir,q_obs1,) )
-    actor1.start()
+    #actor1 = Process(target=load_and_actor,args=(model2_dir,q_obs1,) )
+    #actor1.start()
     #actor2 = Process(target=load_and_actor,args=(model2_dir,q_obs2,) )
     #actor2.start()
     #actor3 = Process(target=load_and_actor,args=(model3_dir,q_obs3,) )
@@ -730,13 +730,13 @@ if __name__ == '__main__':
     
         a1=torch.rand((1,66))
         #ac1=action_net1(a1)
-        #ac2=action_net2(a1)
+        ac2=action_net2(a1)
         #ac3=action_net3(a1)
         #ac4=action_net4(a1)
         #ac5=action_net5(a1)
         #ac6=action_net6(a1)
         end_t=time.time()
         print("last time",(end_t-start_t)*1000)
-     '''   
+    '''
     
         

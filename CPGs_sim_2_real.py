@@ -172,7 +172,13 @@ with open('force_real17.json', 'r') as f:
 
 step= 0
 cpg_index=ini_index_r[0]
-
+with open('pos_20_17.json', 'r') as f:
+        
+    data_read = json.load(f)
+    positions_tick = np.asarray(data_read['positions_tick'])
+    current_pos_tick = np.asarray(data_read['current_pos_tick'])
+    goal_pos_sim = np.asarray(data_read['goal_pos_sim'])
+    phase = np.asarray(data_read['phase'])
 
 import numpy as np
 
@@ -311,7 +317,7 @@ for step in range(240*1):
     
     cpg_index=cpg_index+1
 
-str1="pos_20_17_1"+".json"
+str1="pos_20_17_2"+".json"
 print(str1)
 #data = {'positions': positions,'current_pos_tick':current_pos_tick,'goal_pos_sim':goal_pos_sim,'phase':phase_all,}
 data = {'positions_tick': positions,'current_pos_tick':current_pos_tick,'goal_pos_sim':goal_pos_sim,'phase':phase_all,}

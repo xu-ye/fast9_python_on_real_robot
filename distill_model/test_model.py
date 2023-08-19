@@ -23,9 +23,9 @@ action_net4=ActionNet(obs_dim, n_embd, act_dim,device)
 action_net5=ActionNet(obs_dim, n_embd, act_dim,device)
 action_net6=ActionNet(obs_dim, n_embd, act_dim,device)
     
-action_net1=ActionNet(obs_dim, n_embd*1, act_dim,device)
+action_net1=ActionNet(obs_dim, n_embd*1, act_dim*num_agents,device)
 
-model1_dir="distill_model/action_net1_BC_mlp_1_20.pt"
+model1_dir="/home/fast3/Desktop/DynamixelSDK-3.7.31/python/tests/protocol2_0/distill_model/action_net_one_BC_mlp_new2_1_70.pt"
 model2_dir="distill_model/action_net2_BC_mlp_1_20.pt"
 model3_dir="distill_model/action_net3_BC_mlp_1_20.pt"
 model4_dir="distill_model/action_net4_BC_mlp_1_20.pt"
