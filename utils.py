@@ -31,7 +31,7 @@ def sim_angles_to_real0(theta):
     for i in range(6):
         if i<3:
             
-            hip=180+theta[i,0]/math.pi*180 #å‘å‰ä¸ºå?å??
+            hip=180+theta[i,0]/math.pi*180 #å‘å‰ä¸ºå?å??
             
             knee=180-theta[i,1]/math.pi*180
             ankle=62.69+theta[i,2]/math.pi*180
@@ -41,7 +41,7 @@ def sim_angles_to_real0(theta):
             real_angles[3+i*6+2]=ankle
             
         else:
-            hip=180+theta[i,0]/math.pi*180 #å‘å‰ä¸ºå?å??
+            hip=180+theta[i,0]/math.pi*180 #å‘å‰ä¸ºå?å??
             knee=180+theta[i,1]/math.pi*180
             ankle=62.69-theta[i,2]/math.pi*180
             
@@ -105,7 +105,7 @@ def sim_angles_to_real(theta):
     for i in range(6):
         if i<3:
             
-            hip=(180-theta[i,0]/math.pi*180) #å‘å‰ä¸ºå?å??
+            hip=(180-theta[i,0]/math.pi*180) #å‘å‰ä¸ºå?å??
             
             knee=180-theta[i,1]/math.pi*180
             ankle=62.69+theta[i,2]/math.pi*180
@@ -115,7 +115,7 @@ def sim_angles_to_real(theta):
             real_angles[0+i*6+2]=ankle
             
         else:
-            hip=(180-theta[i,0]/math.pi*180) #å‘å‰ä¸ºå?å??
+            hip=(180-theta[i,0]/math.pi*180) #å‘å‰ä¸ºå?å??
             knee=180+theta[i,1]/math.pi*180
             ankle=62.69-theta[i,2]/math.pi*180
             
@@ -204,7 +204,27 @@ def real_torque_to_sim_torque(real_current):
             
            
         
-    return torque_sim            
+    return torque_sim         
+
+
+def crc16_cal(datalist):
+    test_crc=0xFFFF                 #??1?16??????????FFFF????1????????CRC????
+    poly=0xa001
+    # poly=0x8005
+    numl=len(datalist)
+    for num in range(numl):
+        data=datalist[num]
+        test_crc=(data&0xFF)^test_crc   #????8?????????????????????16??CRC?????8??????????CRC????????????
+        
+        #???
+        for bit in range(8):
+            if(test_crc&0x1)!=0:
+                test_crc>>=1
+                test_crc^=poly
+            else:
+                test_crc>>=1
+    #print(hex(test_crc))
+    return test_crc   
 
     
     

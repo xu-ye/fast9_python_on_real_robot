@@ -5,9 +5,9 @@ import time
 import numpy as np
 import pybullet_robots.panda.panda_sim as panda_sim
 
-#p.connect(p.DIRECT)
+p.connect(p.DIRECT)
 
-p.connect(p.GUI)
+#p.connect(p.GUI)
 p.configureDebugVisualizer(p.COV_ENABLE_Y_AXIS_UP,1)
 p.setAdditionalSearchPath(pd.getDataPath())
 
@@ -19,4 +19,6 @@ panda = panda_sim.PandaSim(p,[0,0,0])
 while (1):
 	panda.step()
 	p.stepSimulation()
+ 	#print("1")
 	time.sleep(timeStep)
+	print(1)

@@ -183,7 +183,7 @@ def stance_and_swing_reflex(reflex_sim_swing,reflex_sim_stance,phase):
 
 
 def judge_imu_reflex2(imu_data,phase):
-    # 输入imu__data 弧度
+    # 输入imu__data 角度度
     #imu_data1=imu_data/3.1415926*180
     imu_data1=imu_data
     reflex=np.zeros(6)

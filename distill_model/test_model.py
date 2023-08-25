@@ -25,12 +25,12 @@ action_net6=ActionNet(obs_dim, n_embd, act_dim,device)
     
 action_net1=ActionNet(obs_dim, n_embd*1, act_dim*num_agents,device)
 
-model1_dir="/home/fast3/Desktop/DynamixelSDK-3.7.31/python/tests/protocol2_0/distill_model/action_net_one_BC_mlp_new2_1_70.pt"
-model2_dir="distill_model/action_net2_BC_mlp_1_20.pt"
-model3_dir="distill_model/action_net3_BC_mlp_1_20.pt"
-model4_dir="distill_model/action_net4_BC_mlp_1_20.pt"
-model5_dir="distill_model/action_net5_BC_mlp_1_20.pt"
-model6_dir="distill_model/action_net6_BC_mlp_1_20.pt"
+model1_dir="/home/fast09/Desktop0/DynamixelSDK-3.7.31/python/tests/protocol2_0/distill_model/action_net_one_BC_mlp_new2_1_70.pt"
+model2_dir="/home/fast09/Desktop0/DynamixelSDK-3.7.31/python/tests/protocol2_0/distill_model/action_net3_BC_mlp_1_20.pt"
+model3_dir="/home/fast09/Desktop0/DynamixelSDK-3.7.31/python/tests/protocol2_0/distill_model/action_net3_BC_mlp_1_20.pt"
+model4_dir="/home/fast09/Desktop0/DynamixelSDK-3.7.31/python/tests/protocol2_0/distill_model/action_net3_BC_mlp_1_20.pt"
+model5_dir="/home/fast09/Desktop0/DynamixelSDK-3.7.31/python/tests/protocol2_0/distill_model/action_net3_BC_mlp_1_20.pt"
+model6_dir="/home/fast09/Desktop0/DynamixelSDK-3.7.31/python/tests/protocol2_0/distill_model/action_net3_BC_mlp_1_20.pt"
 
 saved_model_1 = torch.load(model1_dir,map_location=torch.device('cpu'))
 saved_model_2 = torch.load(model2_dir,map_location=torch.device('cpu'))
@@ -46,7 +46,7 @@ action_net5.load_state_dict(saved_model_5)
 action_net6.load_state_dict(saved_model_6)
 
 obs=torch.rand((1,66))
-for i in range(400):
+for i in range(100):
     start_t=time.time()
     ac1=action_net1(obs)
     #ac2=action_net2(obs)

@@ -60,12 +60,16 @@ from pybullet_functions import *
 from distill_model.action_net import *
 import torch
 
+import serial
+import time
+import struct
 
 
 
 
 
-def read_servos_only1(servos,cpg_index,step,imu,coef_real,phase_now,cpg_now):
+
+def read_servos_only1(Position_Read,relative_z,cpg_index,step,IMU_data,coef_real,phase_now,cpg_now):
     
     # 输出应该是 仿真环境下的机器人状态
     # imu 输入的应该是角度 单位为度数
@@ -74,64 +78,37 @@ def read_servos_only1(servos,cpg_index,step,imu,coef_real,phase_now,cpg_now):
     
     #phase_r = np.asarray(data_read['phase'])
     #cpg_r = np.asarray(data_read['cpg'])
-    print("read data time: ",(time.time()-start_t0)*1000)
-    start_t0=time.time()
-    position_Read=servos.read_all_positions() # np array 18
-    
-    end_t=time.time()
-    print("read time: ",(end_t-start_t0)*1000)
+    #print("read data time: ",(time.time()-start_t0)*1000)
+
     start_t1=time.time()
-    theta_sim=real_angles_to_sim(position_Read)
-   
-    (roll ,pitch,yaw)=imu[0:3]/180*math.pi # 绕着 xy z轴转动
-    length_12=0.126
-    length_13=0.266
-    dz1=-length_12*math.tan(roll)
-    dz2=-length_13*math.tan(roll)
-    foot_z=np.zeros(6)
-    #phase=phase_r[cpg_index,:]
+    theta_sim=real_angles_to_sim(Position_Read)
     phase=phase_now
     observation_temp=[]
     print("cal time: ",(time.time()-start_t1)*1000)
     
     start_t111=time.time()
     for agent_index in range(agent_num):
-        start_t0=time.time()
+        #start_t0=time.time()
         
-        robot_joint_positions_agenti=theta_sim[agent_index]
-        if agent_index>=3:
-            end_pos,end_ori=get_forward_pos(-robot_joint_positions_agenti)
-        else:
-            end_pos,end_ori=get_forward_pos(robot_joint_positions_agenti)
-            
-        foot_z[agent_index]=end_pos[2]
-        if agent_index%3==1:
-            foot_z[agent_index]=end_pos[2]+dz1            
-        if agent_index%3==2:
-            foot_z[agent_index]=end_pos[2]+dz2
-            
-        relative_foot_z=np.array([foot_z[agent_index]-foot_z[0]])
-        print("forward pos time: ",(time.time()-start_t0)*1000)
-            # 相位信息
-            
-        #phase_continus=cpg_r[agent_index,2:4,cpg_index]
+        robot_joint_positions_agenti=theta_sim[agent_index]     
+        relative_foot_z=np.array([relative_z[agent_index]])
         phase_continus=cpg_now[agent_index,2:4]
-        start_t0=time.time()
-        observation_agenti=np.concatenate((robot_joint_positions_agenti,imu,relative_foot_z,phase_continus,np.array([phase[agent_index]]),np.array([coef_real[agent_index]]),),)
-        print("concatenate time: ",(time.time()-start_t0)*1000)
+        #start_t0=time.time()
+        observation_agenti=np.concatenate((robot_joint_positions_agenti,IMU_data,relative_foot_z,phase_continus,np.array([phase[agent_index]]),np.array([coef_real[agent_index]]),),)
+        #print("concatenate time: ",(time.time()-start_t0)*1000)
             
-        start_t0=time.time()
+        
             #observation_agenti = np.append(robot_joint_positions_agenti, imu)
             #observation_agenti = np.append(observation_agenti,relative_foot_z)
             #observation_agenti = np.append(observation_agenti,phase_continus)
             #observation_agenti = np.append(observation_agenti,phase[agent_index])
             #observation_agenti = np.append(observation_agenti,coef_real[agent_index])
         observation_temp.append(observation_agenti)
-        print("append time: ",(time.time()-start_t0)*1000)
+       
     
     observation = np.array(np.vstack(observation_temp)).flatten()
     print("loop time: ",(time.time()-start_t111)*1000)
-    return observation,position_Read
+    return observation
 
 
 
@@ -206,37 +183,7 @@ def read_servos_only(servos,data_read,cpg_index,step,imu,coef_real):
 
 
 
-def onUpdate(deviceModel):
-    """
-    数据更新事件  Data update event
-    :param deviceModel: 设备模型    Device model
-    :return:
-    """
-    global IMU_data
-    '''
-    print("芯片时间:" + str(deviceModel.getDeviceData("Chiptime"))
-         , " 温度:" + str(deviceModel.getDeviceData("temperature"))
-         , " 加速度：" + str(deviceModel.getDeviceData("accX")) +","+  str(deviceModel.getDeviceData("accY")) +","+ str(deviceModel.getDeviceData("accZ"))
-         ,  " 角速度:" + str(deviceModel.getDeviceData("gyroX")) +","+ str(deviceModel.getDeviceData("gyroY")) +","+ str(deviceModel.getDeviceData("gyroZ"))
-         , " 角度:" + str(deviceModel.getDeviceData("angleX")) +","+ str(deviceModel.getDeviceData("angleY")) +","+ str(deviceModel.getDeviceData("angleZ"))
-        , " 磁场:" + str(deviceModel.getDeviceData("magX")) +","+ str(deviceModel.getDeviceData("magY"))+","+ str(deviceModel.getDeviceData("magZ"))
-        , " 经度:" + str(deviceModel.getDeviceData("lon")) + " 纬度:" + str(deviceModel.getDeviceData("lat"))
-        , " 航向角:" + str(deviceModel.getDeviceData("Yaw")) + " 地速:" + str(deviceModel.getDeviceData("Speed"))
-         , " 四元素:" + str(deviceModel.getDeviceData("q1")) + "," + str(deviceModel.getDeviceData("q2")) + "," + str(deviceModel.getDeviceData("q3"))+ "," + str(deviceModel.getDeviceData("q4"))
-          )
-    '''
-    
-    IMU_data=np.array([deviceModel.getDeviceData("angleX"),deviceModel.getDeviceData("angleY"),deviceModel.getDeviceData("angleZ"),deviceModel.getDeviceData("gyroX"),
-                       deviceModel.getDeviceData("gyroY"),deviceModel.getDeviceData("gyroZ"),deviceModel.getDeviceData("accX"),deviceModel.getDeviceData("accY"),deviceModel.getDeviceData("accZ")])
-    #q_imu_1.append(q_imu)
-    q_imu_1.put(IMU_data)
-   
 
-
-    
-    global _IsWriteF
-    _IsWriteF = False             # 标记不可写入标识    Tag cannot write the identity
-    #_writeF.close()               #关闭文件 Close file
      
 def set_pybullet():
     ## 加载servo_client
@@ -295,31 +242,7 @@ def servo_pybullet(q_servo_obs_now,q_servo_obs_next,q_pos_read):
             
        
 
-def read_imu(q_imu):
-     #init servos
-    global  q_imu_1
-    q_imu_1=q_imu
-    device = deviceModel.DeviceModel(
-        "我的JY901",
-        WitProtocolResolver(),
-        JY901SDataProcessor(),
-        "51_0"
-    )
 
-    if (platform.system().lower() == 'linux'):
-        device.serialConfig.portName = "/dev/ttyUSB0"   #设置串口   Set serial port
-    else:
-        device.serialConfig.portName = "COM39"          #设置串口   Set serial port
-    device.serialConfig.baud = 230400                     #设置波特率  Set baud rate
-    device.ADDR=0x50
-    device.openDevice()                                 #打开串口   Open serial port
-    #setConfig()
-    
-    readConfig(device)                                  #读取配置信息 Read configuration information
-    
-    device.dataProcessor.onVarChanged.append(onUpdate)  #数据更新事件 Data update event
-    #q_imu.put(IMU_data)
-    
 
 def load_and_actor(model1_dir,q_obs,q_act):
     obs_dim_t = 11
@@ -338,7 +261,7 @@ def load_and_actor(model1_dir,q_obs,q_act):
     while 1:
         
         if q_obs.empty()==False:
-            print("q_obs empty  ",q_obs.empty())
+            #print("q_obs empty  ",q_obs.empty())
             obs=q_obs.get(True,10)
             #print("obs",obs)
             obs_tensor=torch.tensor(obs).to(device)
@@ -351,10 +274,10 @@ def load_and_actor(model1_dir,q_obs,q_act):
             #action=action_net1(obs)
             #action=action_net1(obs)
             action_np=action.detach().numpy()
-            print("action",action_np)
+            #print("action",action_np)
             q_act.put(action_np)
             end_t=time.time()
-            pid = os.getpid()
+            #pid = os.getpid()
             # 显示进程号
             
             print("network last time",(end_t-start_t)*1000)
@@ -362,7 +285,7 @@ def load_and_actor(model1_dir,q_obs,q_act):
 
               
 
-def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
+def reflex_(ser,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
     
 
     #set_pybullet()
@@ -396,35 +319,9 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
     
     
 
-    # init servos
-    servos=Servos()
-    voltage=servos.read_voltage(1)
-    servos.set_position_control()
-    #position_Read=servos.read_position_loop()
-    position_all=range(18)
-    print("Press any key to enable legs! (or press ESC to escape!)")
-    #if getch() != chr(0x1b):
-        #servos.enable_torque(position_all)
-    servos.enable_torque(position_all)
-    position_Read=servos.read_all_positions()
-    print("read position:",position_Read)
     
-    theta_sim=goal_pos_sim[step]    
-    angles_real=sim_angles_to_real(theta_sim)
-    servos.Robot_initialize(angles_real)
-    goal_theta_tick=angles_to_tick(angles_real)
-    time.sleep(5)
-    position_Read=servos.read_all_positions()
-    position_Read_tick=angles_to_tick(position_Read)
     flat_cpg_tick=current_pos_tick[step] #18
     
-
-    theta_tick=angles_to_tick(angles_real)
-    servos.write_all_positions(theta_tick)
-    servos.write_all_positions(theta_tick)
-    servos.write_all_positions(theta_tick)
-
-
 
     # init vaiables
     positions=[]
@@ -447,6 +344,10 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
     last_reflex_coef=np.ones(6)
     coef_real=np.zeros(6)
     action=np.zeros(6)
+    theta_new_sim=np.zeros(18)
+    swing_coef_apply=np.ones(6)  
+    imu_coef=np.ones(6)  
+    imu_reflex_sim=np.zeros(6)
     
     
     
@@ -461,52 +362,26 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
     reflex=np.zeros(6)
     # 计数在每个swing or reflex中的步数
     swing_step_count=0
-    IMU_data_init=q_imu.get(True,10)
-    while( not q_imu.empty()):
-        IMU_data_init=q_imu.get(True,10)
+    step_count=0
+    
     
 
 
-
-    
-    for count in range(int(T*1)):
-        start_time_t=time.time()
-        
-        # 接收imu的数据
-        IMU_data=q_imu.get(True,10)
-        
-        while( not q_imu.empty()):
-            IMU_data=q_imu.get(True,10)
-        #if count==0:
-        #    imu_init=IMU_data
-        #    IMU_data[0:3]=IMU_data[0:3]-imu_init[0:3]
-        #else:
-        #    IMU_data[0:3]=IMU_data[0:3]-imu_init[0:3]
-        
-             
-        #IMU_data=np.array([0,0,0,0,0,0,])
-        IMU_data_angles=IMU_data[0:3]-IMU_data_init[0:3] # 绕着 xy z轴转动  单独是度
-        (roll ,pitch,yaw)=IMU_data[0:3]/180*math.pi # 绕着 xy z轴转动
-        
-        # roll  绕着x轴旋转 x 轴是身体横向  
-        # 仿真中roll  和实际中roll的方向相同
-        #print("roll pitch yaw: ",roll ,pitch,yaw)
+    while True:
+        count = ser.inWaiting()
+        if count >= 108:
             
-        
-        if count<4:
-            # just give command
-            theta_sim=goal_pos_sim[count]    
-            angles_real=sim_angles_to_real(theta_sim)
-            theta_tick=angles_to_tick(angles_real)
-            servos.write_all_positions(theta_tick)
-            # read feedback
-            position_Read=servos.read_all_positions()
-            position_Read_tick=angles_to_tick(position_Read)
-            flat_cpg_tick=current_pos_tick[count] #18
-            traj_error_buf[count]=flat_cpg_tick-position_Read_tick
-            on_reflex=np.zeros(6)
+            start_time_t=time.time()
             
-        else:
+            data1 = ser.read(108)
+            print("count",count,time.time())
+            data_unpack=struct.unpack('<27f',data1) 
+            #print("unpack all",data_unpack,"time:",time.time())
+            Position_Read=np.array(data_unpack[0:18])
+            IMU_data=np.array(data_unpack[18:21]) #弧度 单位
+            relative_z=np.array(data_unpack[21:])
+            #print("Position_Read",Position_Read,"IMU_data",IMU_data,"relative_z",relative_z)
+            
             # judhe whwther or not is a reflex
             # 在判断一开始的reflex 之前就清零
             # judge reflex 
@@ -515,34 +390,65 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
             
             
             # read feedback
-            '''
-            position_Read=servos.read_all_positions()
-            position_Read_tick=angles_to_tick(position_Read)
+            ## servo plant 也同样运动
+            if on_reflex.any() or imu_reflex_sim.any():
+                q_servo_obs_next.put(theta_new_sim)
+                #position_servo_sim=q_pos_read.get(True,10)
+                #position_servo_real=sim_angles_to_real(position_servo_sim)
+                #position_servo_tick=angles_to_tick(position_servo_real)
             
+            phase_now=phase[step]
+            
+            
+            ## 实际运行的幅值
+            for i in range(6):
+                if phase_now[i]==1:#摇摆相
+                    coef_real[i]=(swing_coef_apply[i]*on_reflex[i])/( swing_coef+1)
+                elif phase_now[i]==-1:#支撑相
+                    coef_real[i]=(imu_coef[i]*imu_reflex_sim[i])/( stance_coef+1)  # 归一化到1    
+                
+            # read feedback
+            time_obs_before=time.time()
+            #observation,position_Read=read_servos_only(servos,data_read_json,cpg_index,step,IMU_data_angles,coef_real)
+            cpg_now=cpg_r[:,:,cpg_index]
+            observation=read_servos_only1(Position_Read,relative_z,cpg_index,step,IMU_data,coef_real,phase_now,cpg_now)
+            print("observation time",(time.time()-time_obs_before)*1000)
+            q_obs1.put(observation)
+            action_flag=0
+            
+            
+            position_Read_tick=angles_to_tick(Position_Read)
             flat_cpg_tick=current_pos_tick[step] #18
             
             on_reflex_real=sim_reflex_leg_to_real(on_reflex)
-            on_reflex_stance_real=sim_reflex_leg_to_real(on_reflex_stance)
             
             
-            
-            
-            if on_reflex.any() or imu_reflex.any():
+            if q_act.empty()==False:
+                action=q_act.get(True,1)
+                print("action!!")
+                action_flag=1
+            print("action time",(time.time()-start_time_t)*1000)
+            if on_reflex.any() or imu_reflex_sim.any():
                 #q_servo_obs_next.put(theta_new_sim)
                 position_servo_sim=q_pos_read.get(True,10)
                 position_servo_real=sim_angles_to_real(position_servo_sim)
                 position_servo_tick=angles_to_tick(position_servo_real)
-                
+            if q_act.empty()==False:
+                action=q_act.get(True,1)
+                print("action!!")
+                action_flag=1
+            
             
             time4=time.time()
             print("read pos  time",(time4-start_time_t)*1000)
-                
             
+               
+            imu_reflex_real=sim_reflex_leg_to_real(imu_reflex_sim)
             
             for i in range(6):
                 if on_reflex_real[i]==1:
                     flat_cpg_tick[3*i:3*i+3]=position_servo_tick[3*i:3*i+3]
-                elif imu_reflex[i]==1:
+                elif imu_reflex_real[i]==1:
                     flat_cpg_tick[3*i:3*i+3]=position_servo_tick[3*i:3*i+3]
          
             ## buffer 升级
@@ -550,13 +456,39 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
                 traj_error_buf[i_index]=traj_error_buf[i_index+1]
             traj_error_buf[3]=flat_cpg_tick-position_Read_tick
             
-            '''
+            
+            
+            
+            
+            
+            if step==239:
+                step=0
+            else:
+                step=step+1
+                
+            if cpg_index==239:
+                cpg_index=0
+            else:
+                cpg_index+=1
+            if step%T==int(T/4-1):
+                T_count+=1
+            step_count+=1
+            
+            if step_count>T*1:
+                break
+
+            
+            
+            
+            
+            ## 新的step  判断REFLEX
             
             
             
             
             phase_now=phase[step]
             last_phase=phase[step-1]
+            
             reflex,sum_leg=judge_reflex(traj_error_buf)
             reflex_sim=real_reflex_leg_to_sim(reflex)
             reflex_sim=swing_reflex(reflex_sim,phase_now)
@@ -564,7 +496,7 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
             reflex_sim_new=judge_new_reflex(reflex_sim,swing_step_per_reflex)
             
             
-            print("sum_leg",sum_leg,)
+            #print("sum_leg",sum_leg,)
             
             #print("count:",count,"reflex",reflex,"on reflex",on_reflex)
             # on_reflex 在sim的基础上
@@ -612,7 +544,7 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
             
             if (swing_step_per_reflex==1).any() :
                 reflex_count[swing_step_per_reflex==1]+=1
-                position_read_sim=real_angles_to_sim(position_Read)
+                position_read_sim=real_angles_to_sim(Position_Read)
                 q_servo_obs_now.put(position_read_sim.flatten())
                 position_servo_sim=q_pos_read.get(True,10)
                 position_servo_real=sim_angles_to_real(position_servo_sim)
@@ -630,31 +562,11 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
             
             
             
-            
+            IMU_data_angles=np.array(IMU_data)/math.pi*180
             imu_reflex_sim=judge_imu_reflex2(IMU_data_angles,phase_now)
-            
-            '''
-            coef_delta=0.4
-            #得到的imu reflex 是仿真中的
-            imu_reflex_sim=judge_imu_reflex2(IMU_data_angles,phase_now)
-            # imu_reflex 是真实的
-            
-            coef_imu_sim=get_imu_coef(IMU_data_angles,imu_reflex_sim)
-            #coef_imu=sim_reflex_leg_to_real(coef_imu_sim)
-            
-            if swing_step_count<5:
-                coef=1*np.ones(6)
-                on_reflex=np.zeros_like(on_reflex)
-                reflex_sim=np.zeros_like(on_reflex)
-                #coef_stance=1
-            else:
-                
-                coef=np.clip(1*np.ones(6)+coef_delta*(reflex_count),0,3)
-                #coef_stance=1.5
-                print("coef",coef)
-                #coef_stance=1.5
-            '''
-            #action=np.array([0.2,0.2,0.2,0.2,0.2,0.2])
+            if action_flag==0:
+                action=q_act.get(True,8)
+                print("action!!")
             
             action_coef=np.zeros(6)
             for coef_index in range(6):
@@ -670,7 +582,7 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
                     #coef_stance=1.5
                 coef=np.clip(1*np.ones(6)+action_coef,0,3)
                 #print("reflex sim",reflex_sim,"on reflex",on_reflex)
-            swing_coef_apply=np.zeros(6)   
+            
             for i in range(6):
                 if swing_step_per_reflex[i]==1:
                     swing_coef_apply[i]=coef[i]
@@ -697,74 +609,22 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
             
             angles_real=sim_angles_to_real(theta_new_sim)
             theta_tick=angles_to_tick(angles_real)
-            servos.write_all_positions(theta_tick)
+            action_theta=theta_tick.tolist()
+            action_theta_array=struct.pack('<18f',*action_theta)
+            crc=crc16_cal(action_theta_array)
+            crc1=crc.to_bytes(2,'big')	
             
+            end=b'\n'
+            action_array_crc=action_theta_array+crc1+end  
+            ser.write(action_array_crc)  
+    
             time3=time.time()
             print("write time",(time3-start_time_t)*1000)
             
             
             
             
-            ## servo plant 也同样运动
-            if on_reflex.any() or imu_reflex_sim.any():
-                q_servo_obs_next.put(theta_new_sim)
-                #position_servo_sim=q_pos_read.get(True,10)
-                #position_servo_real=sim_angles_to_real(position_servo_sim)
-                #position_servo_tick=angles_to_tick(position_servo_real)
-            
-            
-            
-            ## 实际运行的幅值
-            for i in range(6):
-                if phase_now[i]==1:#摇摆相
-                    coef_real[i]=(swing_coef_apply[i]*on_reflex[i])/( swing_coef+1)
-                elif phase_now[i]==-1:#支撑相
-                    coef_real[i]=(imu_coef[i]*imu_reflex_sim[i])/( stance_coef+1)  # 归一化到1    
-                
-            # read feedback
-            time_obs_before=time.time()
-
-            #observation,position_Read=read_servos_only(servos,data_read_json,cpg_index,step,IMU_data_angles,coef_real)
-            cpg_now=cpg_r[:,:,cpg_index]
-            
-            observation,position_Read=read_servos_only1(servos,cpg_index,step,IMU_data_angles,coef_real,phase_now,cpg_now)
-            print("observation time",(time.time()-time_obs_before)*1000)
-            q_obs1.put(observation)
-            
-            #position_Read=servos.read_all_positions()
-            position_Read_tick=angles_to_tick(position_Read)
-            flat_cpg_tick=current_pos_tick[step] #18
-            
-            on_reflex_real=sim_reflex_leg_to_real(on_reflex)
-            on_reflex_stance_real=sim_reflex_leg_to_real(on_reflex_stance)
-            
-            
-            
-            if on_reflex.any() or imu_reflex_sim.any():
-                #q_servo_obs_next.put(theta_new_sim)
-                position_servo_sim=q_pos_read.get(True,10)
-                position_servo_real=sim_angles_to_real(position_servo_sim)
-                position_servo_tick=angles_to_tick(position_servo_real)
-            
-            action=q_act.get(True,10)
-            time4=time.time()
-            print("read pos  time",(time4-start_time_t)*1000)
-            
-               
-            imu_reflex_real=sim_reflex_leg_to_real(imu_reflex_sim)
-            
-            for i in range(6):
-                if on_reflex_real[i]==1:
-                    flat_cpg_tick[3*i:3*i+3]=position_servo_tick[3*i:3*i+3]
-                elif imu_reflex_real[i]==1:
-                    flat_cpg_tick[3*i:3*i+3]=position_servo_tick[3*i:3*i+3]
-         
-            ## buffer 升级
-            for i_index in range(3):
-                traj_error_buf[i_index]=traj_error_buf[i_index+1]
-            traj_error_buf[3]=flat_cpg_tick-position_Read_tick
-            
-            
+           
             # csv writer
             #traj_error_all.append(flat_cpg_tick-position_Read_tick)
             #count_all.append(count)
@@ -781,11 +641,11 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
             
             
             csv_row=[]
-            csv_row=[count,T_count,sum_leg,reflex_sim,reflex_stance_sim,on_reflex2,on_reflex_stance2,reflex_index2,reflex_index_stance2,swing_step_count,flat_cpg_tick,position_Read_tick,IMU_data_angles,voltage,error_now,swing_step_count,coef,imu_reflex_sim]
+            csv_row=[count,T_count,sum_leg,reflex_sim,reflex_stance_sim,on_reflex2,on_reflex_stance2,reflex_index2,reflex_index_stance2,swing_step_count,flat_cpg_tick,position_Read_tick,IMU_data_angles,error_now,swing_step_count,coef,imu_reflex_sim]
             csv_rows.append(csv_row)
             
             time5=time.time()
-            print("end time",(time5-start_time_t)*1000)
+            
             
             
             
@@ -798,13 +658,13 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
             
         
             #print("current",current_read,"\n")
-            print("error now",error_now)
+            #print("error now",error_now)
             #print("reflex_stance",reflex_stance_sim,"on reflex",on_reflex_stance,'reflex_index_stance',reflex_index_stance,'T_count',)
             while (time.time()-start_time_t)*1000<20.00:
                 1
             end_time_t=time.time()
-            print("last time",(time.time()-start_time_t)*1000,"count:",count,"reflex",reflex_sim,"on reflex",on_reflex,'reflex_index',reflex_index,'T_count',T_count,"imu_reflex",imu_reflex_real)
-           
+            #print("last time",(time.time()-start_time_t)*1000,"count:",count,"reflex",reflex_sim,"on reflex",on_reflex,'reflex_index',reflex_index,'T_count',T_count,"imu_reflex",imu_reflex_real)
+            print("end time",(time5-start_time_t)*1000)
             
         
         
@@ -813,18 +673,7 @@ def reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act):
             
         
         
-        if step==239:
-            step=0
-        else:
-            step=step+1
-            
-        if cpg_index==239:
-            cpg_index=0
-        else:
-            cpg_index+=1
-        if step%T==int(T/4-1):
-            T_count+=1
-
+        
     
     # csv
     with open('data_reflex_imu_gym_4_3.csv', mode='w', newline='') as csv_file:
@@ -871,19 +720,26 @@ if __name__ == '__main__':
     q_obs1=Queue()
     
     
+    ser = serial.Serial("/dev/ttyAMA0",115200*16,parity='E',timeout=0.00001)
+    if not ser.isOpen():
+        print("open failed")
+    else:
+        print("open success: ")
+        print(ser)
+    
+    
     model1_dir="/home/fast09/Desktop0/DynamixelSDK-3.7.31/python/tests/protocol2_0/distill_model/action_net_one_BC_mlp_new2_1_70.pt"
     # socket
 
     
-    Read_IMU = Process(target=read_imu,args=(q_imu,) )
-    Read_IMU.start()
+   
     time.sleep(0.1)
     servo_client = Process(target=servo_pybullet,args=(q_servo_obs_now,q_servo_obs_next,q_pos_read,) )
     servo_client.start()
     actor1 = Process(target=load_and_actor,args=(model1_dir,q_obs1,q_act) )
     actor1.start()
     time.sleep(2)
-    reflex_(q_imu,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act)
+    reflex_(ser,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act)
     #Reflex_ = Process(target=reflex_,args=(q_imu,) )
     #Reflex_.start()
     
