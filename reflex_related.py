@@ -106,7 +106,7 @@ def judge_reflex(traj_error):
     sum_leg=np.sum(sum_flag,axis=1)
     #print("sum leg",sum_leg)
     reflex=np.zeros(6)
-    reflex[sum_leg>60]=1
+    reflex[sum_leg>70]=1
     return reflex,sum_leg
 
 def judge_reflex_stance(traj_error):
@@ -188,7 +188,7 @@ def judge_imu_reflex2(imu_data,phase):
     imu_data1=imu_data
     reflex=np.zeros(6)
     
-    if abs(imu_data1[0])>3 or abs(imu_data1[1])>3 or abs(imu_data1[2])>5:
+    if abs(imu_data1[0])>5 or abs(imu_data1[1])>5 or abs(imu_data1[2])>5:
         for i in range(6):
             if phase[i]==-1:
                 reflex[i]=1
@@ -297,4 +297,23 @@ def get_reflex_theta_all2(theta_original,coef,coef_stance,reflex,on_reflex,phase
         else:
             theta_new[j]=theta_original[j]
     return  theta_new 
+
+
+
+def imu_reflex_smooth(theta_tick,last_theta_tick,phase_sim):
+    phase_real=sim_reflex_leg_to_real(phase_sim)
+    theta_new_tick=np.zeros_like(theta_tick)
+    off_set=20
+    for i_smooth in range(6):
+        if phase_real[i_smooth]==-1:#÷ß≥≈œ‡
+            theta_new_tick[3*i_smooth+0]=np.clip(theta_tick[3*i_smooth+0],last_theta_tick[3*i_smooth+0]-off_set,last_theta_tick[3*i_smooth+0]+off_set)
+            theta_new_tick[3*i_smooth+1]=np.clip(theta_tick[3*i_smooth+1],last_theta_tick[3*i_smooth+1]-off_set,last_theta_tick[3*i_smooth+1]+off_set)
+            theta_new_tick[3*i_smooth+2]=np.clip(theta_tick[3*i_smooth+2],last_theta_tick[3*i_smooth+2]-off_set,last_theta_tick[3*i_smooth+2]+off_set)
+        else:
+            theta_new_tick[3*i_smooth+0:3*i_smooth+3]=theta_tick[3*i_smooth+0:3*i_smooth+3]
+            
+            
+    return theta_new_tick
+            
+        
 
