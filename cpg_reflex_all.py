@@ -744,7 +744,8 @@ def reflex_(ser,q_servo_obs_now,q_servo_obs_next,q_pos_read,q_obs1,q_act,num_T):
         
     
     # csv
-    with open('data_reflex_imu_gym_4_28.csv', mode='w', newline='') as csv_file:
+    
+    with open('data_reflex_imu_gym_4_42.csv', mode='w', newline='') as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(['count','T_count','sum_leg','reflex_sim','reflex_stance_sim','on_reflex2','on_reflex_stance2','reflex_index2','reflex_index_stance2','swing_step_count','flat_cpg_tick','position_Read_tick','IMU_data'])
         writer.writerows(csv_rows)
